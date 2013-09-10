@@ -315,9 +315,24 @@ class PluginMailing_ActionMailing extends ActionPlugin
     }
 
     protected function EventSubscribe(){
-        $sEmail = getRequest('mail');
-        $this->PluginMailing_ModuleMailing_AddAnon($sEmail);
-        $this->Message_AddNotice($this->Lang_Get('plugin.mailing.user_subscribed'), $this->Lang_Get('success'));
+        if($oAnonUser = $this->PluginMailing_ModuleMailing_GetAnonUserByMail(getRequest('mail'))){
+            $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_errorexists'), $this->Lang_Get('error'));
+            return;
+        }
+        if($oAnonUser = Engine::GetEntity('PluginMailing_ModuleMailing_EntityMailingAnon')){
+            if(!$sEmail = getRequest('mail') or !func_check(getRequest('mail'),'mail')){
+                $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_errormail'), $this->Lang_Get('error'));
+                return;
+            };
+            $sUserName = getRequest('username');
+            $oAnonUser->setUserMail($sEmail);
+            $oAnonUser->setUserName($sUserName);
+            $oAnonUser->setUnsubHash('a_'.md5($sEmail.$sUserName));
+            $this->PluginMailing_ModuleMailing_AddAnon($oAnonUser);
+            $this->Message_AddNotice($this->Lang_Get('plugin.mailing.user_subscribed'), $this->Lang_Get('success'));
+            return;
+        }
+        $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_error'), $this->Lang_Get('error'));
     }
 
     protected function EventUnsubscribe()

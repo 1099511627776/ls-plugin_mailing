@@ -96,14 +96,14 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
         return false;
     }
 
-    public function AddAnon($sUserMail){
-        $sql = "INSERT INTO ".Config::Get('db.table.mailing_anon')." (user_mail) VALUES ( ? )";
-        $this->oDb->query($sql,$sUserMail);
+    public function AddAnon($oUser){
+        $sql = "INSERT INTO ".Config::Get('db.table.mailing_anon')." (user_mail,user_name, unsub_hash) VALUES (?, ?, ?)";
+        $this->oDb->query($sql,$oUser->getUserMail(),$oUser->getUserName(),$oUser->getUnsubHash());
     }
 
-    public function DeleteAnon($sUserMail){
-        $sql = "DELETE FROM ".Config::Get('db.table.mailing_anon')." WHERE user_mail=?";
-        $this->oDb->query($sql,$sUserMail);
+    public function DeleteAnon($oUser){
+        $sql = "DELETE FROM ".Config::Get('db.table.mailing_anon')." WHERE user_mail = ?";
+        $this->oDb->query($sql,$oUser->getUserMail());
     }
 
     public function CheckAnon($sUserMail){
@@ -115,13 +115,21 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
     }
 
     public function GetAnonUsers(){
-        $sql = "SELECT user_mail FROM ".Config::Get('db.table.mailing_anon');
+        $sql = "SELECT * FROM ".Config::Get('db.table.mailing_anon');
         if($aRows = $this->oDb->select($sql)){
             $aResult = array();
             foreach($aRows as $aRow){
-                $aResult[] = $aRow['user_mail'];
+                $aResult[] = Engine::GetEntity('PluginMailing_ModuleMailing_EntityMailingAnon',$aRow);
             }
             return $aResult;
+        }
+        return false;
+    }
+
+    public function GetAnonUserByMail($sMail){
+        $sql = "SELECT * FROM ".Config::Get('db.table.mailing_anon'). " WHERE user_mail = ? ";
+        if($aRow = $this->oDb->selectRow($sql,$sMail)){
+            return Engine::GetEntity('PluginMailing_ModuleMailing_EntityMailingAnon',$aRow);
         }
         return false;
     }

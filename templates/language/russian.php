@@ -68,5 +68,8 @@ return array(
     
     'unsub_notice' => '<p><a href="' . Config::Get('path.root.web') . '/mailing/unsubscribe?email=%%email%%&hash=%%hash%%">Если Вы не хотите получать эти уведомления, нажмите на эту ссылку</a></p>',
     'user_subscribed' => 'Вы подписались на рассылку',
+    'user_subscribe_error' => 'Внутренняя ошибка, сообщите администратору',
+    'user_subscribe_errormail' => 'Вы указали неправильный емейл',
+    'user_subscribe_errorexists' => 'Вы уже подписаны на рассылку',
 );
 
