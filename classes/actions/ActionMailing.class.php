@@ -44,6 +44,7 @@ class PluginMailing_ActionMailing extends ActionPlugin
         $this->AddEvent('delete', 'EventDelete');
         $this->AddEvent('activate', 'EventActivate');
         $this->AddEvent('unsubscribe', 'EventUnsubscribe');
+        $this->AddEvent('subscribe', 'EventSubscribe');
     }
 
     /**
@@ -311,6 +312,12 @@ class PluginMailing_ActionMailing extends ActionPlugin
 
         $this->Viewer_Assign('oMailing', $oMailing);
         $this->SetTemplateAction('delete.mailing');
+    }
+
+    protected function EventSubscribe(){
+        $sEmail = getRequest('mail');
+        $this->PluginMailing_ModuleMailing_AddAnon($sEmail);
+        $this->Message_AddNotice($this->Lang_Get('plugin.mailing.user_subscribed'), $this->Lang_Get('success'));
     }
 
     protected function EventUnsubscribe()

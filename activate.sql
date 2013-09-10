@@ -17,10 +17,16 @@ CREATE TABLE IF NOT EXISTS `prefix_mailing_queue` (
     `mailing_id` INT( 11 ) UNSIGNED NOT NULL,
     `user_id` INT( 11 ) UNSIGNED NOT NULL,
     `talk_id` INT( 11 ) UNSIGNED DEFAULT NULL,
+    `anon_mail` VARCHAR( 50 ) DEFAULT NULL,
     `sended` TINYINT( 1 ) UNSIGNED NOT NULL DEFAULT '0',
     INDEX `mailing_id` (`mailing_id`),
     INDEX `user_id` (`user_id`),
     INDEX `talk_id` (`talk_id`)
+) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+CREATE TABLE IF NOT EXISTS `prefix_mailing_anon` (
+    `user_mail` VARCHAR( 50 ) NOT NULL,
+    INDEX `user_mail` (`user_mail`)
 ) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 ALTER TABLE `prefix_mailing`

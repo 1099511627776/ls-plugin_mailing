@@ -18,6 +18,7 @@ Config::Set('router.page.mailing', 'PluginMailing_ActionMailing');
 //Set db
 Config::Set('db.table.mailing', '___db.table.prefix___mailing');
 Config::Set('db.table.mailing_queue', '___db.table.prefix___mailing_queue');
+Config::Set('db.table.mailing_anon', '___db.table.prefix___mailing_anon');
 
 // Limit for mails per once
 Config::Set('MAIL_LIMIT', 20);
@@ -25,3 +26,15 @@ Config::Set('MAIL_LIMIT', 20);
 // подставляется в Talk, необходио так же для непоказа автору рассылки писем без ответов
 Config::Set('IP_SENDER', '255.255.255.255');
 
+Config::Set('block.subscribe_block',
+    array(
+        'action' => array('index'),
+        'blocks' => array(
+            'right' => array(
+                'subscribe'=>array('params'=>array('plugin'=>'mailing'),'priority'=>1000),
+            )
+        )
+    )
+);
+
+?>

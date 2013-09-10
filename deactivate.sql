@@ -8,3 +8,4 @@ ALTER TABLE `prefix_mailing_queue` DROP FOREIGN KEY `prefix_mailing_queue_ibfk_3
 
 DROP TABLE IF EXISTS `prefix_mailing_queue`;
 DROP TABLE IF EXISTS `prefix_mailing`;
+DROP TABLE IF EXISTS `prefix_mailing_anon`;

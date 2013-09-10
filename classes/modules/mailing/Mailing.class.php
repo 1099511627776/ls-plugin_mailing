@@ -113,7 +113,21 @@ class PluginMailing_ModuleMailing extends Module
                 }
             }
         }
+        if($aAnonUsers = $this->PluginMailing_ModuleMailing_GetAnonUsers()){
+            foreach($aAnonUsers as $sUserMail){
+                // Put mail into Mailing queue
+                $oMailingQueue = new PluginMailing_ModuleMailing_EntityMailingQueue();
+                $oMailingQueue->setMailingId($oMailing->getMailingId());
+                $oMailingQueue->setUserId(0);
+                $oMailingQueue->setAnonMail($sUserMail);
 
+                $oMailingQueue->setSended(false);
+
+                if ($this->_oMapper->addMailToQueue($oMailingQueue)) {
+                    $iAdded++;
+                }
+            }
+        }
         // Update number of successful addition
         $oMailing->setMailingCount($iAdded);
         $oMailing->setMailingSended(0);
@@ -133,11 +147,30 @@ class PluginMailing_ModuleMailing extends Module
         return $this->UpdateMailing($oMailing);
     }
 
+    public function AddAnon($sUserMail){
+        return $this->_oMapper->AddAnon($sUserMail);
+    }
+
+    public function DeleteAnon($sUserMail){
+        return $this->_oMapper->DeleteAnon($sUserMail);
+    }
+
+    public function CheckAnon($sUserMail){
+        return $this->_oMapper->CheckAnon($sUserMail);
+    }
+
+    public function GetAnonUsers(){
+        return $this->_oMapper->GetAnonUsers();
+    }
+
     /**
      * Send queue mail
      *
      * @param PluginMailing_ModuleMailing_EntityMailingQueue $oMail
      */
+    public function SendAnonMail($sMail){
+    }
+
     public function SendMail($oMail)
     {
         if ($oMail->getMailingTalk()) {
@@ -147,31 +180,42 @@ class PluginMailing_ModuleMailing extends Module
             // Создаем новый разговор
             $sTitle = $oMail->getMailingTitle();
             $sText = htmlspecialchars_decode($oMail->getMailingText(), ENT_QUOTES);
+            if($oMail->getUserId() != 0){
+                $oUserToMail = $this->User_GetUserById($oMail->getUserId());
+                $oUserCurrent = $this->User_GetUserById($oMail->getSendByUserId());
 
-            $oUserToMail = $this->User_GetUserById($oMail->getUserId());
-            $oUserCurrent = $this->User_GetUserById($oMail->getSendByUserId());
+                $oTalk=$this->Talk_SendTalk($sTitle,$sText,$oUserCurrent,array($oUserToMail),false,false);
 
-            $oTalk=$this->Talk_SendTalk($sTitle,$sText,$oUserCurrent,array($oUserToMail),false,false);
-
-            if ($oTalk) {
-                $this->Notify_SendTalkNew($oUserToMail, $oUserCurrent, $oTalk);
-                $this->SetTalkIdForSendedMail($oMail->getId(), $oTalk->getId());
-                $this->SetSended($oMail->getId());
-
+                if ($oTalk) {
+                    $this->Notify_SendTalkNew($oUserToMail, $oUserCurrent, $oTalk);
+                    $this->SetTalkIdForSendedMail($oMail->getId(), $oTalk->getId());
+                    $this->SetSended($oMail->getId());
+                    return true;
+                }
+                return false;
+            } else {
                 return true;
             }
-
-            return false;
-
         } else {
-            $oUserTo = $this->User_GetUserById($oMail->getUserId());
-            $sText = htmlspecialchars_decode($oMail->getMailingText(), ENT_QUOTES);
-            $this->Lang_SetLang($oUserTo->getUserLang());
-            $sText .= $this->Lang_Get('plugin.mailing.unsub_notice', array('email' => $oUserTo->getMail(), 'hash' => $oUserTo->getUserNoDigestHash()));
-            $this->Mail_SetAdress($oUserTo->getMail(), $oUserTo->getLogin());
-            $this->Mail_SetSubject($oMail->getMailingTitle());
-            $this->Mail_SetBody($sText);
-            $this->Mail_setHTML();
+            if($oMail->getUserId() != 0){
+                $oUserTo = $this->User_GetUserById($oMail->getUserId());
+                $sText = htmlspecialchars_decode($oMail->getMailingText(), ENT_QUOTES);
+                $this->Lang_SetLang($oUserTo->getUserLang());
+                $sText .= $this->Lang_Get('plugin.mailing.unsub_notice', array('email' => $oUserTo->getMail(), 'hash' => $oUserTo->getUserNoDigestHash()));
+                $this->Mail_SetAdress($oUserTo->getMail(), $oUserTo->getLogin());
+                $this->Mail_SetSubject($oMail->getMailingTitle());
+                $this->Mail_SetBody($sText);
+                $this->Mail_setHTML();
+            } else {
+                $sUserMail = $oMail->getAnonMail();
+                $sText = htmlspecialchars_decode($oMail->getMailingText(), ENT_QUOTES);
+                //$this->Lang_SetLang($oUserTo->getUserLang());
+                $sText .= $this->Lang_Get('plugin.mailing.unsub_notice', array('email' => $sUserMail, 'hash' => ''));
+                $this->Mail_SetAdress($sUserMail, $sUserMail);
+                $this->Mail_SetSubject($oMail->getMailingTitle());
+                $this->Mail_SetBody($sText);
+                $this->Mail_setHTML();
+            }
 
             if ($this->Mail_Send()) {
                 return $this->SetSended($oMail->getId());

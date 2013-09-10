@@ -41,7 +41,7 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
                     mailing_talk
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		";
+        ";
         if ($iId = $this->oDb->query($sql, $oMailing->getSendByUserId(), $oMailing->getMailingTitle(), $oMailing->getMailingText(), $oMailing->getMailingCount(), $oMailing->getMailingActive(), serialize($oMailing->getMailingSex()), $oMailing->getMailingDate(), serialize($oMailing->getMailingLang()), $oMailing->getMailingTalk())) {
             return $iId;
         }
@@ -70,7 +70,7 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
                     mailing_talk = ?d
                  WHERE
                     mailing_id = ?d
-		";
+        ";
         if ($this->oDb->query($sql, $oMailing->getSendByUserId(), $oMailing->getMailingTitle(), $oMailing->getMailingText(), $oMailing->getMailingCount(), $oMailing->getMailingActive(), serialize($oMailing->getMailingSex()), $oMailing->getMailingDate(), serialize($oMailing->getMailingLang()), $oMailing->getMailingTalk(), $oMailing->getMailingId())) {
             return true;
         }
@@ -96,6 +96,36 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
         return false;
     }
 
+    public function AddAnon($sUserMail){
+        $sql = "INSERT INTO ".Config::Get('db.table.mailing_anon')." (user_mail) VALUES ( ? )";
+        $this->oDb->query($sql,$sUserMail);
+    }
+
+    public function DeleteAnon($sUserMail){
+        $sql = "DELETE FROM ".Config::Get('db.table.mailing_anon')." WHERE user_mail=?";
+        $this->oDb->query($sql,$sUserMail);
+    }
+
+    public function CheckAnon($sUserMail){
+        $sql = "SELECT count(*) FROM ".Config::Get('db.table.mailing_anon')." WHERE user_mail = ?";
+        if($aRow = $this->oDb->selectRow($sql,$sUserMail)){
+            return $aRow['count'];
+        }
+        return false;
+    }
+
+    public function GetAnonUsers(){
+        $sql = "SELECT user_mail FROM ".Config::Get('db.table.mailing_anon');
+        if($aRows = $this->oDb->select($sql)){
+            $aResult = array();
+            foreach($aRows as $aRow){
+                $aResult[] = $aRow['user_mail'];
+            }
+            return $aResult;
+        }
+        return false;
+    }
+
     /**
      * Add mail to queue
      *
@@ -109,11 +139,12 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
                 (
                     mailing_id,
                     user_id,
+                    anon_mail,
                     sended
                 )
-                VALUES (?d, ?d, ?d)
+                VALUES (?d, ?d, ?, ?d)
                ";
-        if ($this->oDb->query($sql, $oMailingQueue->getMailingId(), $oMailingQueue->getUserId(), $oMailingQueue->getSended())) {
+        if ($this->oDb->query($sql, $oMailingQueue->getMailingId(), $oMailingQueue->getUserId(),$oMailingQueue->getAnonMail(), $oMailingQueue->getSended())) {
             return true;
         }
         return false;
@@ -191,7 +222,7 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
     {
         $sql = "DELETE FROM " . Config::Get('db.table.mailing_queue') . "
                  WHERE id IN(?a)
-		";
+        ";
         if ($this->oDb->query($sql, $aMailingId)) {
             return true;
         }
@@ -280,7 +311,7 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
                     talk_id = ?d
                 WHERE
                     id = ?d
-		";
+        ";
         if ($this->oDb->query($sql, $TalkId, $MailId)) {
             return true;
         }
@@ -301,7 +332,7 @@ class PluginMailing_ModuleMailing_MapperMailing extends Mapper
                     sended = 1
                 WHERE
                     id = ?d
-		";
+        ";
         if ($this->oDb->query($sql, $MailId)) {
             return true;
         }
