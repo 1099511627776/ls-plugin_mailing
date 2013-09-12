@@ -151,6 +151,10 @@ class PluginMailing_ModuleMailing extends Module
         return $this->_oMapper->AddAnon($oUser);
     }
 
+    public function UpdateAnon($oUser){
+        return $this->_oMapper->UpdateAnon($oUser);
+    }
+
     public function DeleteAnon($oUser){
         return $this->_oMapper->DeleteAnon($oUser);
     }
@@ -161,6 +165,14 @@ class PluginMailing_ModuleMailing extends Module
 
     public function GetAnonUsers(){
         return $this->_oMapper->GetAnonUsers();
+    }
+
+    public function GetAnonUsersPage($iPage,$iPerPage){
+        $iCount = 0;
+        return array(
+            'collection' => $this->_oMapper->getAnonUsersPage($iCount,$iPage,$iPerPage),
+            'count' => $iCount
+        );
     }
 
     public function GetAnonUserByMail($sMail){

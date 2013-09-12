@@ -43,8 +43,18 @@ class PluginMailing_ActionMailing extends ActionPlugin
         $this->AddEvent('list', 'EventList');
         $this->AddEvent('delete', 'EventDelete');
         $this->AddEvent('activate', 'EventActivate');
+        $this->AddEvent('aactivate', 'EventAactivate');
         $this->AddEvent('unsubscribe', 'EventUnsubscribe');
         $this->AddEvent('subscribe', 'EventSubscribe');
+        $this->AddEvent('admin',array('EventAdmin','admin'));
+    }
+
+    protected function EventAdmin(){
+        $iPage = preg_match("/^page(\d+)?$/i",$this->GetParam(0),$match) ? $match[1] : 1;
+        $aResult = $this->PluginMailing_ModuleMailing_GetAnonUsersPage($iPage,20);
+        $aPaging=$this->Viewer_MakePaging($aResult['count'],$iPage,20,Config::Get('pagination.pages.count'),Router::GetPath('mailing')."admin/");
+        $this->Viewer_Assign('aSubscribers',$aResult['collection']);
+        $this->Viewer_Assign('aPaging',$aPaging);
     }
 
     /**
@@ -316,29 +326,68 @@ class PluginMailing_ActionMailing extends ActionPlugin
 
     protected function EventSubscribe(){
         if($oAnonUser = $this->PluginMailing_ModuleMailing_GetAnonUserByMail(getRequest('mail'))){
-            $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_errorexists'), $this->Lang_Get('error'));
+            $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_errorexists'));
             return;
         }
         if($oAnonUser = Engine::GetEntity('PluginMailing_ModuleMailing_EntityMailingAnon')){
             if(!$sEmail = getRequest('mail') or !func_check(getRequest('mail'),'mail')){
-                $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_errormail'), $this->Lang_Get('error'));
+                $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_errormail'));
                 return;
             };
             $sUserName = getRequest('username');
             $oAnonUser->setUserMail($sEmail);
             $oAnonUser->setUserName($sUserName);
-            $oAnonUser->setUnsubHash('a_'.md5($sEmail.$sUserName));
+            $oAnonUser->setUnsubHash('a_'.md5($sEmail));
             $this->PluginMailing_ModuleMailing_AddAnon($oAnonUser);
-            $this->Message_AddNotice($this->Lang_Get('plugin.mailing.user_subscribed'), $this->Lang_Get('success'));
+            $this->Message_AddNotice($this->Lang_Get('plugin.mailing.user_subscribed'));
+
+            $this->Mail_SetAdress($sEmail,$sUserName);
+            $this->Mail_SetSubject($this->Lang_Get('plugin.mailing.subscribe_activate'));
+            $sText = $this->Lang_Get('plugin.mailing.subscribe_activate_text', array('email' => $oAnonUser->getUserMail(), 'hash' => $oAnonUser->getUnsubHash()));
+            $this->Mail_SetBody($sText);
+            $this->Mail_setHTML();
+            $this->Mail_Send();
+
             return;
         }
-        $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_error'), $this->Lang_Get('error'));
+        $this->Message_AddError($this->Lang_Get('plugin.mailing.user_subscribe_error'));
+    }
+
+    protected function EventAactivate(){
+        $sEmail = getRequest('email');
+        $sHash  = getRequest('hash');
+        print $sEmail;
+        print $sHash;
+        if((strpos($sHash,'a_') !== false) and (strpos($sHash,'a_') === 0)){
+            if($oUser = $this->PluginMailing_ModuleMailing_GetAnonUserByMail($sEmail)){
+                print_r($oUser);
+                if($oUser->getUnsubHash() != $sHash){
+                    $this->Message_AddError('hash error', $this->Lang_Get('error'));
+                    return;
+                }
+                $oUser->setActivated(1);
+                $this->PluginMailing_ModuleMailing_UpdateAnon($oUser);
+                $this->Message_AddNotice($this->Lang_Get('plugin.mailing.user_subscribed'), $this->Lang_Get('attention'));
+                return;
+            }
+        }
     }
 
     protected function EventUnsubscribe()
     {
         $sEmail = getRequest('email');
         $sHash  = getRequest('hash');
+        if((strpos($sHash,'a_') !== false) and (strpos($sHash,'a_') === 0)){
+            if($oUser = $this->PluginMailing_ModuleMailing_GetAnonUserByMail($sEmail)){
+                if($oUser->getUnsubHash() != $sHash){
+                    $this->Message_AddError('hash error', $this->Lang_Get('error'));
+                    return;
+                }
+                $this->PluginMailing_ModuleMailing_DeleteAnon($oUser);
+                $this->Message_AddNotice($this->Lang_Get('plugin.mailing.lsdigest_usub_complete'), $this->Lang_Get('attention'));
+                return;
+            }
+        }
         if (!$sHash || !$sEmail) {
             $this->Message_AddError($this->Lang_Get('plugin.mailing.lsdigest_usub_noparams'), $this->Lang_Get('error'));
             return;
